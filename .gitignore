@@ -224,3 +224,9 @@ __marimo__/
 
 # Environment secrets
 .env
+
+# BLAY local database
+data/
+*.db
+*.db-shm
+*.db-wal

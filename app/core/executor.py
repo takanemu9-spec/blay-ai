@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from app.agents.research_agent import ResearchAgent
 from app.agents.tech_agent import TechAgent
 from app.agents.qa_agent import QAAgent
+from app.core.memory import save_plan
 
 
 AGENT_REGISTRY = {
@@ -44,6 +45,8 @@ def execute_plan(plan: dict) -> dict:
         "error": None
     }
 
+    save_plan(plan, "execution_started")
+
     context = {}
 
     try:
@@ -59,6 +62,12 @@ def execute_plan(plan: dict) -> dict:
             task["status"] = "running"
             task["started_at"] = now()
 
+            save_plan(
+                plan,
+                "agent_started",
+                {"agent": agent_name}
+            )
+
             result = agent.run(plan, task, context)
 
             task["result"] = result
@@ -66,6 +75,15 @@ def execute_plan(plan: dict) -> dict:
             task["status"] = result["status"]
 
             context[agent_name] = result
+
+            save_plan(
+                plan,
+                "agent_completed",
+                {
+                    "agent": agent_name,
+                    "status": result["status"]
+                }
+            )
 
             if result["status"] != "completed":
                 raise ValueError(
@@ -80,6 +98,7 @@ def execute_plan(plan: dict) -> dict:
         plan["execution"]["status"] = "completed"
         plan["execution"]["completed_at"] = now()
 
+        save_plan(plan, "execution_completed")
         return plan
 
     except Exception as error:
@@ -91,6 +110,12 @@ def execute_plan(plan: dict) -> dict:
         for task in tasks:
             if task.get("status") == "running":
                 task["status"] = "failed"
+
+        save_plan(
+            plan,
+            "execution_failed",
+            {"error": str(error)}
+        )
 
         raise ValueError(
             f"Eksekusi gagal: {error}"

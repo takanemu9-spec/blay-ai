@@ -1,8 +1,7 @@
 from uuid import uuid4
 from datetime import datetime, timezone
 
-
-PLANS = {}
+from app.core.memory import save_plan, get_plan as memory_get_plan
 
 
 def create_plan(prompt: str):
@@ -17,6 +16,7 @@ def create_plan(prompt: str):
         "instruction": prompt.strip(),
         "status": "awaiting_approval",
         "requires_approval": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "approval": {
             "status": "pending",
             "decided_at": None
@@ -25,27 +25,30 @@ def create_plan(prompt: str):
             {
                 "agent": "Research Agent",
                 "task": "Menganalisis kebutuhan dan mengumpulkan informasi proyek",
-                "status": "pending"
+                "status": "pending",
+                "result": None
             },
             {
                 "agent": "Tech Agent",
                 "task": "Menyusun solusi dan rancangan teknis berdasarkan hasil riset",
-                "status": "pending"
+                "status": "pending",
+                "result": None
             },
             {
                 "agent": "QA Agent",
                 "task": "Memeriksa kualitas dan kelengkapan hasil pekerjaan",
-                "status": "pending"
+                "status": "pending",
+                "result": None
             }
         ]
     }
 
-    PLANS[project_id] = plan
+    save_plan(plan, "project_created")
     return plan
 
 
 def get_plan(project_id: str):
-    return PLANS.get(project_id)
+    return memory_get_plan(project_id)
 
 
 def approve_plan(project_id: str):
@@ -66,6 +69,7 @@ def approve_plan(project_id: str):
         "decided_at": now
     }
 
+    save_plan(plan, "project_approved")
     return plan
 
 
@@ -87,4 +91,5 @@ def reject_plan(project_id: str):
         "decided_at": now
     }
 
+    save_plan(plan, "project_rejected")
     return plan
