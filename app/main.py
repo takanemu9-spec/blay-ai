@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 
 from app.core.director import (
@@ -8,6 +8,7 @@ from app.core.director import (
     reject_plan
 )
 from app.core.executor import execute_plan
+from app.core.security import verify_api_key
 
 app = FastAPI(
     title="BLAY AI",
@@ -29,7 +30,7 @@ def home():
     }
 
 
-@app.post("/plan")
+@app.post("/plan", dependencies=[Depends(verify_api_key)])
 def create_project_plan(request: PlanRequest):
     try:
         return create_plan(request.prompt)
@@ -37,7 +38,7 @@ def create_project_plan(request: PlanRequest):
         raise HTTPException(status_code=400, detail=str(error))
 
 
-@app.get("/plan/{project_id}")
+@app.get("/plan/{project_id}", dependencies=[Depends(verify_api_key)])
 def read_project_plan(project_id: str):
     plan = get_plan(project_id)
 
@@ -50,7 +51,7 @@ def read_project_plan(project_id: str):
     return plan
 
 
-@app.post("/plan/{project_id}/approve")
+@app.post("/plan/{project_id}/approve", dependencies=[Depends(verify_api_key)])
 def approve_project(project_id: str):
     try:
         return approve_plan(project_id)
@@ -58,14 +59,14 @@ def approve_project(project_id: str):
         raise HTTPException(status_code=400, detail=str(error))
 
 
-@app.post("/plan/{project_id}/reject")
+@app.post("/plan/{project_id}/reject", dependencies=[Depends(verify_api_key)])
 def reject_project(project_id: str):
     try:
         return reject_plan(project_id)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
 
-@app.post("/plan/{project_id}/execute")
+@app.post("/plan/{project_id}/execute", dependencies=[Depends(verify_api_key)])
 def execute_project(project_id: str):
     plan = get_plan(project_id)
 
